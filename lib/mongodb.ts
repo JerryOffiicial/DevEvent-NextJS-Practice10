@@ -51,6 +51,13 @@ async function connectDB(): Promise<mongoose.Connection> {
 
   // Reuse pending connection promise if one exists
   if (!cached.promise) {
+
+    if (!MONGODB_URI) {
+      throw new Error(
+        'Please define the MONGODB_URI environment vairable inside .env.local'
+      )
+    }
+
     const options = {
       bufferCommands: false, // Disable Mongoose buffering for better error handling
     };
