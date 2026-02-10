@@ -43,26 +43,24 @@ const bookingSchema = new Schema<IBooking>(
  * Ensures the eventId corresponds to an existing Event document
  * Throws error if event does not exist in the database
  */
-bookingSchema.pre('save', async function (next) {
+bookingSchema.pre('save', async function () {
   // Only validate eventId if it's new or modified
   if (this.isModified('eventId')) {
-    try {
-      // Dynamically import Event model to avoid circular dependencies
-      const Event = models.Event || (await import('./event.model')).default;
-      
-      // Check if the event exists
-      const eventExists = await Event.exists({ _id: this.eventId });
-      
-      if (!eventExists) {
-        return next(new Error('Event not found. Cannot create booking for non-existent event.'));
-      }
-    } catch (error) {
-      return next(new Error('Failed to validate event reference.'));
+    // Dynamically import Event model to avoid circular dependencies
+    const Event =
+      models.Event || (await import('./event.model')).default;
+
+    // Check if the event exists
+    const eventExists = await Event.exists({ _id: this.eventId });
+
+    if (!eventExists) {
+      throw new Error(
+        'Event not found. Cannot create booking for non-existent event.'
+      );
     }
   }
-
-  next();
 });
+
 
 // Create index on eventId for faster query performance
 bookingSchema.index({ eventId: 1 });

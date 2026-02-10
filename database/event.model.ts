@@ -116,43 +116,38 @@ const eventSchema = new Schema<IEvent>(
  * - Normalizes date to ISO format (YYYY-MM-DD)
  * - Ensures time is in consistent 24-hour format (HH:MM)
  */
-eventSchema.pre('save', function (next) {
-  // Generate slug only if title is new or modified
+eventSchema.pre('save', async function () {
   if (this.isModified('title')) {
     this.slug = this.title
       .toLowerCase()
       .trim()
-      .replace(/[^\w\s-]/g, '') // Remove special characters
-      .replace(/\s+/g, '-') // Replace spaces with hyphens
-      .replace(/-+/g, '-') // Replace multiple hyphens with single hyphen
-      .replace(/^-+|-+$/g, ''); // Remove leading/trailing hyphens
+      .replace(/[^\w\s-]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-+|-+$/g, '');
   }
 
-  // Normalize date to ISO format (YYYY-MM-DD)
   if (this.isModified('date')) {
     const dateObj = new Date(this.date);
     if (isNaN(dateObj.getTime())) {
-      return next(new Error('Invalid date format. Please provide a valid date.'));
+      throw new Error('Invalid date format. Please provide a valid date.');
     }
-    // Store in ISO format (YYYY-MM-DD)
     this.date = dateObj.toISOString().split('T')[0];
   }
 
-  // Normalize time to 24-hour format (HH:MM)
   if (this.isModified('time')) {
     const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
+
     if (!timeRegex.test(this.time)) {
-      // Try to parse common time formats (e.g., "3:30 PM", "15:30")
       const parsed = parseTime(this.time);
       if (!parsed) {
-        return next(new Error('Invalid time format. Use HH:MM (24-hour format).'));
+        throw new Error('Invalid time format. Use HH:MM (24-hour format).');
       }
       this.time = parsed;
     }
   }
-
-  next();
 });
+
 
 /**
  * Helper function to parse various time formats to 24-hour format
@@ -188,8 +183,7 @@ function parseTime(timeStr: string): string | null {
   return null;
 }
 
-// Create unique index on slug for fast lookups and uniqueness enforcement
-eventSchema.index({ slug: 1 }, { unique: true });
+
 
 // Prevent model recompilation in Next.js hot reload
 const Event = models.Event || model<IEvent>('Event', eventSchema);
