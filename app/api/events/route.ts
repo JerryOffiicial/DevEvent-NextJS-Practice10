@@ -13,6 +13,7 @@ export const POST = async (req: NextRequest) => {
 
         try {
             event = Object.fromEntries(formData.entries())
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         } catch (error) {
             return NextResponse.json({ message: 'Invalid JSON data format' }, { status: 400 })
         }
@@ -22,6 +23,9 @@ export const POST = async (req: NextRequest) => {
         if (!file) {
             return NextResponse.json({ message: 'Image file is required' })
         }
+
+        const tags = JSON.parse(formData.get('tags') as string);
+        const agenda = JSON.parse(formData.get('agenda') as string);
 
         const arrayBuffer = await file.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);
@@ -35,7 +39,11 @@ export const POST = async (req: NextRequest) => {
 
         event.image = (uploadResult as { secure_url: string }).secure_url;
 
-        const createdEvent = await Event.create(event);
+        const createdEvent = await Event.create({
+            ...event,
+            tags: tags,
+            agenda: agenda
+        });
 
         return NextResponse.json({ message: 'Event created successfully', event: createdEvent }, { status: 201 })
     } catch (error) {
